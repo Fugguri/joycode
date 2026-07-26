@@ -26,8 +26,10 @@ Push-to-talk на удержание кнопки, подтверждения, �
 
 ## Установка
 
+### Из исходников
+
 ```sh
-git clone <repo-url> joycode
+git clone https://github.com/Fugguri/joycode.git
 cd joycode
 ./install.sh
 ```
@@ -35,15 +37,28 @@ cd joycode
 Ставит бинарь в `~/.local/bin/joycode`, ярлык и иконки — в пользовательские папки.
 Запуск: команда `joycode` или иконка «Joycode» в меню приложений.
 
-### Доступ к /dev/uinput
+### Arch / Manjaro (пакет)
 
-Впрыск клавиш требует записи в `/dev/uinput`. Если её нет:
+Рецепт пакета — в [`packaging/aur/`](packaging/aur). Собрать и поставить локально:
 
 ```sh
-./install.sh --udev   # ставит udev-правило и добавляет тебя в группу input (нужен sudo)
+cd packaging/aur
+makepkg -si
 ```
 
-После этого перелогинься, чтобы членство в группе `input` вступило в силу.
+После публикации в AUR — `paru -S joycode-git` (либо `yay -S joycode-git`,
+`pamac install joycode-git`).
+
+### Доступ к /dev/uinput
+
+Впрыск клавиш требует записи в `/dev/uinput`. При установке из исходников, если доступа нет:
+
+```sh
+./install.sh --udev   # ставит udev-правило (нужен sudo), затем перелогинься
+```
+
+Пакет (`makepkg`/AUR) кладёт udev-правило с `uaccess` сам — после установки
+перелогинься или перезагрузись.
 
 ## Управление (по умолчанию)
 
