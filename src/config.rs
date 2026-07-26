@@ -45,18 +45,20 @@ impl Bindings {
     /// Дефолтный маппинг: push-to-talk + подтверждения + навигация.
     pub fn default_map() -> Self {
         let mut map = HashMap::new();
-        map.insert(
-            "LeftTrigger2".into(),
-            Action::Hold { key: "space".into() },
-        );
+        // Верхние кнопки — управление окнами и правка текста.
+        map.insert("LeftTrigger".into(), Action::Key { key: "super+alt+left".into() });
+        map.insert("RightTrigger".into(), Action::Key { key: "super+alt+right".into() });
+        map.insert("LeftTrigger2".into(), Action::Hold { key: "backspace".into() });
+        map.insert("RightTrigger2".into(), Action::Hold { key: "delete".into() });
+        // Лицевые кнопки.
         map.insert("South".into(), Action::Key { key: "enter".into() });
         map.insert("East".into(), Action::Key { key: "esc".into() });
+        map.insert("West".into(), Action::Key { key: "space".into() });
+        map.insert("North".into(), Action::Text { text: "/".into(), enter: false });
+        map.insert("Select".into(), Action::Key { key: "super".into() });
+        // Навигация: крестовина + левый стик — стрелки, правый стик — скролл.
         map.insert("DPadUp".into(), Action::Key { key: "up".into() });
         map.insert("DPadDown".into(), Action::Key { key: "down".into() });
-        // Y — открыть список команд «/», X — удалять текст.
-        map.insert("North".into(), Action::Text { text: "/".into(), enter: false });
-        map.insert("West".into(), Action::Key { key: "backspace".into() });
-        // Левый стик — стрелки (навигация/история), правый — скролл вывода.
         map.insert("LeftStickUp".into(), Action::Key { key: "up".into() });
         map.insert("LeftStickDown".into(), Action::Key { key: "down".into() });
         map.insert("LeftStickLeft".into(), Action::Key { key: "left".into() });
