@@ -113,7 +113,15 @@ impl App {
 
     /// Закрытие окна сворачивает в фон (движок жив); Ctrl+Q — реальный выход.
     fn handle_close(&mut self, ctx: &egui::Context) {
-        if ctx.input(|i| i.modifiers.ctrl && i.key_pressed(egui::Key::Q)) {
+        // Физическая клавиша Q (раскладко-независимо: на кириллице это тоже «Q»).
+        let ctrl_q = ctx.input(|i| {
+            i.events.iter().any(|e| {
+                matches!(e,
+                    egui::Event::Key { physical_key: Some(egui::Key::Q), pressed: true, modifiers, .. }
+                    if modifiers.ctrl)
+            })
+        });
+        if ctrl_q {
             self.really_quit = true;
             ctx.send_viewport_cmd(egui::ViewportCommand::Close);
             return;
@@ -153,6 +161,15 @@ impl App {
 
             // Правый край: тема + компактный статус ARMED
             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                if ui
+                    .button(RichText::new("⏻").size(14.0))
+                    .on_hover_text("Выход (Ctrl+Q)")
+                    .clicked()
+                {
+                    self.really_quit = true;
+                    ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
+                }
+                ui.add_space(6.0);
                 let icon = if self.dark { "☀" } else { "☾" };
                 if ui
                     .button(RichText::new(icon).size(15.0))
