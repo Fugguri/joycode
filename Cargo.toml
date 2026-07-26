@@ -15,10 +15,13 @@ path = "src/probe.rs"
 eframe = "0.29"
 egui = "0.29"
 gilrs = "0.11"
-evdev = "0.13"
 serde = { version = "1", features = ["derive"] }
 toml = "0.8"
 anyhow = "1"
 log = "0.4"
 env_logger = "0.11"
 parking_lot = "0.12"
+
+# Linux-only: виртуальная клавиатура через uinput.
+[target.'cfg(target_os = "linux")'.dependencies]
+evdev = "0.13"

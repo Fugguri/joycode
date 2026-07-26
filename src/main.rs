@@ -7,6 +7,7 @@ mod config;
 mod engine;
 mod fonts;
 mod injector;
+mod keys;
 mod state;
 mod theme;
 

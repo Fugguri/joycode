@@ -1,8 +1,9 @@
 //! Фоновый поток: читает геймпад через gilrs, мапит кнопки И стики в действия,
 //! впрыскивает клавиши через uinput. Уважает флаг armed.
-use crate::actions::{keycode_from_name, parse_chord, Action};
+use crate::actions::Action;
 use crate::config::Bindings;
-use crate::injector::Injector;
+use crate::injector::{self, KeyInjector};
+use crate::keys::{key_from_name, parse_chord, Key};
 use crate::state::SharedState;
 use gilrs::{Axis, Event, EventType, Gilrs};
 use parking_lot::Mutex;
@@ -41,10 +42,10 @@ fn run(state: SharedState, config: SharedConfig) -> anyhow::Result<()> {
         }
     }
 
-    let injector = match Injector::new() {
+    let injector = match injector::new() {
         Ok(i) => i,
         Err(e) => {
-            let msg = format!("не удалось открыть /dev/uinput: {e}");
+            let msg = format!("не удалось создать инжектор клавиш: {e}");
             log::error!("{msg}");
             state.lock().error = Some(msg);
             return Err(e.into());
@@ -73,7 +74,7 @@ fn run(state: SharedState, config: SharedConfig) -> anyhow::Result<()> {
 }
 
 struct Engine {
-    injector: Injector,
+    injector: Box<dyn KeyInjector>,
     state: SharedState,
     config: SharedConfig,
     /// Виртуальные кнопки стиков, активные прямо сейчас (для детекта фронта по оси).
@@ -162,7 +163,7 @@ impl Engine {
         if self.held_hold.remove(name) {
             let action = self.action_for(name);
             if let Action::Hold { key } = action {
-                if let Some(k) = keycode_from_name(&key) {
+                if let Some(k) = key_from_name(&key) {
                     self.state.lock().push_log(format!("HOLD ↑ {key}"));
                     if let Err(e) = self.injector.key_up(k) {
                         log::error!("отпускание {name}: {e}");
@@ -175,7 +176,7 @@ impl Engine {
     fn apply_press(&mut self, name: &str, action: &Action) {
         let res = match action {
             Action::None => return,
-            Action::Hold { key } => match keycode_from_name(key) {
+            Action::Hold { key } => match key_from_name(key) {
                 Some(k) => {
                     self.held_hold.insert(name.to_string());
                     self.state.lock().push_log(format!("HOLD ↓ {key}"));
@@ -207,9 +208,7 @@ impl Engine {
                     .push_log(format!("TEXT «{text}»{}", if *enter { " ⏎" } else { "" }));
                 let r = self.injector.type_text(text);
                 if r.is_ok() && *enter {
-                    if let Some(k) = keycode_from_name("enter") {
-                        let _ = self.injector.key_tap(k);
-                    }
+                    let _ = self.injector.key_tap(Key::Enter);
                 }
                 r
             }
@@ -246,7 +245,7 @@ impl Engine {
         for name in held {
             let action = self.action_for(&name);
             if let Action::Hold { key } = action {
-                if let Some(k) = keycode_from_name(&key) {
+                if let Some(k) = key_from_name(&key) {
                     let _ = self.injector.key_up(k);
                 }
             }
