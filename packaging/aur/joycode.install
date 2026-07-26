@@ -1,0 +1,17 @@
+post_install() {
+    udevadm control --reload-rules 2>/dev/null || true
+    udevadm trigger --name-match=uinput 2>/dev/null || true
+    cat <<'MSG'
+Joycode установлен.
+  • Запуск: joycode  (или иконка «Joycode» в меню приложений)
+  • Доступ к /dev/uinput выдаётся активной сессии через udev (uaccess).
+    Если впрыск клавиш не работает — перезагрузись или перезайди в сессию.
+  • Шрифт интерфейса — Hack: pacman -S ttf-hack
+    (без него — фолбэк на Noto/DejaVu Mono).
+MSG
+}
+
+post_upgrade() {
+    udevadm control --reload-rules 2>/dev/null || true
+    udevadm trigger --name-match=uinput 2>/dev/null || true
+}

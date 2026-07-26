@@ -2,3 +2,9 @@
 *.pid
 *.log
 bindings.toml
+
+# артефакты сборки AUR-пакета
+/packaging/aur/joycode/
+/packaging/aur/src/
+/packaging/aur/pkg/
+/packaging/aur/*.pkg.tar.*

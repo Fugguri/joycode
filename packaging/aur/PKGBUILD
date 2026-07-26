@@ -1,0 +1,61 @@
+# Maintainer: Fugguri <nogurru007@gmail.com>
+pkgname=joycode-git
+_pkgname=joycode
+pkgver=r3.6dab493
+pkgrel=1
+pkgdesc="Управление Claude Code с игрового геймпада: push-to-talk, биндинги, аккорды"
+arch=('x86_64')
+url="https://github.com/Fugguri/joycode"
+license=('MIT')
+# libc/gcc-libs/systemd-libs — из ldd; остальное winit/glow тянут через dlopen.
+depends=('glibc' 'gcc-libs' 'systemd-libs' 'libxkbcommon' 'wayland' 'libglvnd'
+         'libx11' 'libxcursor' 'libxi' 'libxrandr' 'hicolor-icon-theme')
+optdepends=('ttf-hack: моноширинный шрифт интерфейса (иначе фолбэк на Noto/DejaVu Mono)')
+makedepends=('git' 'cargo' 'librsvg')
+provides=('joycode')
+conflicts=('joycode')
+install="$_pkgname.install"
+source=("$_pkgname::git+https://github.com/Fugguri/joycode.git")
+sha256sums=('SKIP')
+
+pkgver() {
+    cd "$_pkgname"
+    printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short=7 HEAD)"
+}
+
+prepare() {
+    cd "$_pkgname"
+    export RUSTUP_TOOLCHAIN=stable
+    cargo fetch --locked --target "$(rustc -vV | sed -n 's/host: //p')"
+}
+
+build() {
+    cd "$_pkgname"
+    export RUSTUP_TOOLCHAIN=stable
+    export CARGO_TARGET_DIR=target
+    cargo build --frozen --release --bin joycode
+}
+
+package() {
+    cd "$_pkgname"
+
+    install -Dm755 target/release/joycode "$pkgdir/usr/bin/joycode"
+
+    # Ярлык: Exec на системный путь.
+    sed "s|@EXEC@|/usr/bin/joycode|g" assets/joycode.desktop.in > "$srcdir/joycode.desktop"
+    install -Dm644 "$srcdir/joycode.desktop" "$pkgdir/usr/share/applications/joycode.desktop"
+
+    # Иконки: scalable + растровые размеры.
+    install -Dm644 assets/joycode.svg "$pkgdir/usr/share/icons/hicolor/scalable/apps/joycode.svg"
+    for s in 48 64 128 256; do
+        rsvg-convert -w "$s" -h "$s" assets/joycode.svg -o "$srcdir/joycode-$s.png"
+        install -Dm644 "$srcdir/joycode-$s.png" "$pkgdir/usr/share/icons/hicolor/${s}x${s}/apps/joycode.png"
+    done
+
+    # udev: доступ к /dev/uinput активной сессии через uaccess (без группы input).
+    install -Dm644 /dev/stdin "$pkgdir/usr/lib/udev/rules.d/99-joycode-uinput.rules" <<'RULE'
+KERNEL=="uinput", TAG+="uaccess", OPTIONS+="static_node=uinput"
+RULE
+
+    install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}
