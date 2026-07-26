@@ -23,7 +23,6 @@ pub struct App {
     tab: Tab,
     dark: bool,
     save_notice: Option<String>,
-    really_quit: bool,
 }
 
 impl App {
@@ -41,7 +40,6 @@ impl App {
             tab: Tab::Status,
             dark: true,
             save_notice: None,
-            really_quit: false,
         }
     }
 }
@@ -111,25 +109,30 @@ impl App {
         }
     }
 
-    /// Закрытие окна сворачивает в фон (движок жив); Ctrl+Q — реальный выход.
+    /// Реальный выход: чистим сокет и выходим напрямую (без eframe-механики).
+    fn quit(&self) -> ! {
+        crate::single_instance::cleanup();
+        std::process::exit(0);
+    }
+
+    /// Ctrl+Q — выход; закрытие окна (крестик) — сворачивание в фон (движок жив).
     fn handle_close(&mut self, ctx: &egui::Context) {
-        // Физическая клавиша Q (раскладко-независимо: на кириллице это тоже «Q»).
+        // Ctrl + физическая клавиша Q (раскладко-независимо).
         let ctrl_q = ctx.input(|i| {
-            i.events.iter().any(|e| {
-                matches!(e,
-                    egui::Event::Key { physical_key: Some(egui::Key::Q), pressed: true, modifiers, .. }
-                    if modifiers.ctrl)
-            })
+            i.modifiers.ctrl
+                && i.events.iter().any(|e| {
+                    matches!(
+                        e,
+                        egui::Event::Key { physical_key: Some(egui::Key::Q), pressed: true, .. }
+                    )
+                })
         });
         if ctrl_q {
-            self.really_quit = true;
-            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
-            return;
+            self.quit();
         }
-        if !self.really_quit && ctx.input(|i| i.viewport().close_requested()) {
+        if ctx.input(|i| i.viewport().close_requested()) {
             ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
-            // Wayland не умеет set_visible(false); сворачиваем (minimize).
-            ctx.send_viewport_cmd(egui::ViewportCommand::Visible(false));
+            // Wayland не умеет set_visible(false) — сворачиваем (minimize).
             ctx.send_viewport_cmd(egui::ViewportCommand::Minimized(true));
             self.state
                 .lock()
@@ -168,8 +171,7 @@ impl App {
                     .on_hover_text("Выход (Ctrl+Q)")
                     .clicked()
                 {
-                    self.really_quit = true;
-                    ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
+                    self.quit();
                 }
                 ui.add_space(6.0);
                 let icon = if self.dark { "☀" } else { "☾" };
