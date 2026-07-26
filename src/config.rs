@@ -75,29 +75,66 @@ impl Bindings {
     }
 
     /// Путь к конфигу рядом с исполняемым файлом (fallback — текущая папка).
+    /// Папка конфига по XDG: $XDG_CONFIG_HOME/joycode или ~/.config/joycode.
+    pub fn config_dir() -> PathBuf {
+        let base = std::env::var_os("XDG_CONFIG_HOME")
+            .map(PathBuf::from)
+            .filter(|p| p.is_absolute())
+            .unwrap_or_else(|| {
+                let home = std::env::var_os("HOME")
+                    .map(PathBuf::from)
+                    .unwrap_or_else(|| PathBuf::from("."));
+                home.join(".config")
+            });
+        base.join("joycode")
+    }
+
     pub fn default_path() -> PathBuf {
+        Self::config_dir().join("bindings.toml")
+    }
+
+    /// Старое расположение конфига (рядом с бинарём) — для одноразовой миграции.
+    fn legacy_path() -> Option<PathBuf> {
         std::env::current_exe()
             .ok()
             .and_then(|p| p.parent().map(|d| d.join("bindings.toml")))
-            .unwrap_or_else(|| PathBuf::from("bindings.toml"))
     }
 
-    /// Загружает конфиг; если файла нет — создаёт дефолтный и сохраняет.
+    /// Загружает конфиг. Если его нет — переносит старый (рядом с бинарём),
+    /// а при отсутствии и его создаёт дефолтный. Папку XDG создаёт при нужде.
     pub fn load_or_create(path: &Path) -> anyhow::Result<Self> {
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+
         if path.exists() {
             let raw = std::fs::read_to_string(path)?;
             let b: Bindings = toml::from_str(&raw)?;
             log::info!("конфиг загружен: {}", path.display());
-            Ok(b)
-        } else {
-            let b = Bindings::default_map();
-            b.save(path)?;
-            log::info!("конфиг не найден, создан дефолтный: {}", path.display());
-            Ok(b)
+            return Ok(b);
         }
+
+        // Миграция: старый конфиг рядом с бинарём → XDG.
+        if let Some(legacy) = Self::legacy_path() {
+            if legacy != path && legacy.exists() {
+                let raw = std::fs::read_to_string(&legacy)?;
+                let b: Bindings = toml::from_str(&raw)?;
+                b.save(path)?;
+                log::info!("конфиг перенесён из {} → {}", legacy.display(), path.display());
+                return Ok(b);
+            }
+        }
+
+        let b = Bindings::default_map();
+        b.save(path)?;
+        log::info!("конфиг не найден, создан дефолтный: {}", path.display());
+        Ok(b)
     }
 
     pub fn save(&self, path: &Path) -> anyhow::Result<()> {
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
         let raw = toml::to_string_pretty(self)?;
         std::fs::write(path, raw)?;
         log::info!("конфиг сохранён: {}", path.display());
