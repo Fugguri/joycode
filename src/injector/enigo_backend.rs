@@ -18,7 +18,13 @@ impl EnigoInjector {
     }
 
     fn send(&mut self, key: Key, dir: Direction) -> io::Result<()> {
-        self.enigo.key(to_ekey(key), dir).map_err(to_io)
+        match to_ekey(key) {
+            Some(k) => self.enigo.key(k, dir).map_err(to_io),
+            None => {
+                log::warn!("enigo: клавиша {key:?} недоступна на этой платформе, пропущена");
+                Ok(())
+            }
+        }
     }
 }
 
@@ -56,16 +62,16 @@ fn to_io<E: std::fmt::Display>(e: E) -> io::Error {
     io::Error::new(io::ErrorKind::Other, e.to_string())
 }
 
-/// Нейтральный Key → enigo Key.
-fn to_ekey(key: Key) -> EKey {
-    match key {
+/// Нейтральный Key → enigo Key. None — если клавиши нет на этой платформе.
+fn to_ekey(key: Key) -> Option<EKey> {
+    Some(match key {
         Key::Space => EKey::Space,
         Key::Enter => EKey::Return,
         Key::Esc => EKey::Escape,
         Key::Tab => EKey::Tab,
         Key::Backspace => EKey::Backspace,
         Key::Delete => EKey::Delete,
-        Key::Insert => EKey::Insert,
+        Key::Insert => return insert_ekey(), // есть только под Windows
         Key::Home => EKey::Home,
         Key::End => EKey::End,
         Key::Up => EKey::UpArrow,
@@ -80,5 +86,15 @@ fn to_ekey(key: Key) -> EKey {
         Key::Shift => EKey::Shift,
         Key::Super => EKey::Meta,
         Key::Char(c) => EKey::Unicode(c),
-    }
+    })
+}
+
+#[cfg(target_os = "windows")]
+fn insert_ekey() -> Option<EKey> {
+    Some(EKey::Insert)
+}
+
+#[cfg(not(target_os = "windows"))]
+fn insert_ekey() -> Option<EKey> {
+    None
 }
