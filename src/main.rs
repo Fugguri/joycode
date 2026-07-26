@@ -35,7 +35,9 @@ fn main() -> eframe::Result<()> {
     engine::spawn(state.clone(), config.clone());
 
     let native_options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_inner_size([560.0, 640.0]),
+        viewport: egui::ViewportBuilder::default()
+            .with_inner_size([560.0, 640.0])
+            .with_app_id("joycode"),
         ..Default::default()
     };
 

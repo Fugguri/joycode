@@ -5,6 +5,7 @@ GenericName=Gamepad control for Claude Code
 Comment=Управление Claude Code с геймпада (push-to-talk, подтверждения, макросы)
 Exec=@EXEC@
 Icon=joycode
+StartupWMClass=joycode
 Terminal=false
 Categories=Utility;Development;
 Keywords=gamepad;claude;controller;joystick;joycode;геймпад;джойстик;контроллер;клод;голос;пуш-ту-ток;джойкод;

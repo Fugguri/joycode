@@ -228,7 +228,27 @@ impl App {
                 .color(p.text_dim)
                 .size(12.5),
         );
-        ui.add_space(10.0);
+        ui.add_space(8.0);
+
+        // Панель действий — всегда на виду (над скроллом со списком).
+        ui.horizontal(|ui| {
+            if accent_button(ui, p, "Сохранить").clicked() {
+                match self.config.lock().save(&self.config_path) {
+                    Ok(()) => {
+                        self.save_notice = Some(format!("сохранено → {}", self.config_path.display()))
+                    }
+                    Err(e) => self.save_notice = Some(format!("ошибка: {e}")),
+                }
+            }
+            if ui.button("Сбросить к дефолту").clicked() {
+                *self.config.lock() = Bindings::default_map();
+                self.save_notice = Some("сброшено к дефолтному маппингу".into());
+            }
+            if let Some(notice) = &self.save_notice {
+                ui.label(RichText::new(notice).color(p.text_dim).size(12.0));
+            }
+        });
+        ui.add_space(8.0);
 
         let mut cfg = self.config.lock().clone();
         let mut changed = false;
@@ -293,24 +313,6 @@ impl App {
 
         if changed {
             *self.config.lock() = cfg;
-        }
-
-        ui.add_space(12.0);
-        ui.horizontal(|ui| {
-            if accent_button(ui, p, "Сохранить").clicked() {
-                match self.config.lock().save(&self.config_path) {
-                    Ok(()) => self.save_notice = Some(format!("сохранено → {}", self.config_path.display())),
-                    Err(e) => self.save_notice = Some(format!("ошибка: {e}")),
-                }
-            }
-            if ui.button("Сбросить к дефолту").clicked() {
-                *self.config.lock() = Bindings::default_map();
-                self.save_notice = Some("сброшено к дефолтному маппингу".into());
-            }
-        });
-        if let Some(notice) = &self.save_notice {
-            ui.add_space(4.0);
-            ui.label(RichText::new(notice).color(p.text_dim).size(12.0));
         }
     }
 
