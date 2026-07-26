@@ -25,3 +25,7 @@ parking_lot = "0.12"
 # Linux-only: виртуальная клавиатура через uinput.
 [target.'cfg(target_os = "linux")'.dependencies]
 evdev = "0.13"
+
+# Не-Linux (Windows/macOS/BSD): впрыск через enigo.
+[target.'cfg(not(target_os = "linux"))'.dependencies]
+enigo = "0.3"

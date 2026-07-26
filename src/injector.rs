@@ -16,7 +16,11 @@ pub trait KeyInjector {
 #[cfg(target_os = "linux")]
 mod uinput;
 
+#[cfg(not(target_os = "linux"))]
+mod enigo_backend;
+
 /// Создаёт инжектор под текущую ОС.
+/// Linux — нативный uinput (работает под Wayland); остальные — enigo.
 #[cfg(target_os = "linux")]
 pub fn new() -> io::Result<Box<dyn KeyInjector>> {
     Ok(Box::new(uinput::UinputInjector::new()?))
@@ -24,9 +28,5 @@ pub fn new() -> io::Result<Box<dyn KeyInjector>> {
 
 #[cfg(not(target_os = "linux"))]
 pub fn new() -> io::Result<Box<dyn KeyInjector>> {
-    // TODO: бэкенды для Windows (SendInput) и macOS (CGEvent), напр. через enigo.
-    Err(io::Error::new(
-        io::ErrorKind::Unsupported,
-        "впрыск клавиш пока реализован только для Linux",
-    ))
+    Ok(Box::new(enigo_backend::EnigoInjector::new()?))
 }
