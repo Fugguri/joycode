@@ -1,5 +1,7 @@
 # Joycode
 
+[English](README.en.md) · **Русский**
+
 Управление [Claude Code](https://claude.com/claude-code) с игрового геймпада на Linux.
 Push-to-talk на удержание кнопки, подтверждения, навигация стиками, слэш-команды
 и системные аккорды (`ctrl+u`, `ctrl+c`) — не отрывая рук от геймпада.
