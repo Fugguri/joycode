@@ -53,6 +53,7 @@ pub fn start_listener(ctx: egui::Context) {
                     let _ = s.read(&mut buf);
                     log::info!("получен сигнал «показать окно»");
                     ctx.send_viewport_cmd(egui::ViewportCommand::Visible(true));
+                    ctx.send_viewport_cmd(egui::ViewportCommand::Minimized(false));
                     ctx.send_viewport_cmd(egui::ViewportCommand::Focus);
                     ctx.request_repaint();
                 }

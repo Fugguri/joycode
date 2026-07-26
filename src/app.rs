@@ -128,7 +128,9 @@ impl App {
         }
         if !self.really_quit && ctx.input(|i| i.viewport().close_requested()) {
             ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
+            // Wayland не умеет set_visible(false); сворачиваем (minimize).
             ctx.send_viewport_cmd(egui::ViewportCommand::Visible(false));
+            ctx.send_viewport_cmd(egui::ViewportCommand::Minimized(true));
             self.state
                 .lock()
                 .push_log("свёрнуто в фон · запусти joycode снова, чтобы открыть · Ctrl+Q — выход");
@@ -362,17 +364,17 @@ impl App {
                 "1. Подключи Xbox-геймпад (провод или Bluetooth).",
                 "2. Поставь терминал с Claude Code в фокус.",
                 "3. На вкладке «Статус» включи тумблер.",
-                "4. Держи LT (L2) и говори — push-to-talk (удержание пробела).",
-                "5. Отпустил LT — распознавание завершилось.",
+                "4. Управляй диалогом кнопками, правь текст LT/RT, листай окна LB/RB.",
+                "5. Push-to-talk (голос) — повесь сам: действие «Удержание» + space.",
             ]);
             help_section(ui, p, "Дефолтные кнопки", &[
-                "LT (L2)  — держать = зажать пробел (голос)",
-                "A        — Enter (принять)",
-                "B        — Esc (отмена)",
-                "Y        — «/» (список команд)",
-                "X        — Backspace (удалять текст)",
-                "D-Pad ↑↓ — стрелки",
-                "L-стик   — стрелки с авто-повтором",
+                "LB / RB  — super+alt+←/→ (переключение окон)",
+                "LT / RT  — держать = Backspace / Delete",
+                "A / B    — Enter / Esc",
+                "X        — Space",
+                "Y        — «/» (меню команд)",
+                "Back     — super (обзор GNOME)",
+                "D-Pad, L-стик — стрелки (с авто-повтором)",
                 "R-стик   — PageUp / PageDown (скролл)",
             ]);
             help_section(ui, p, "Системные клавиши (аккорды)", &[
