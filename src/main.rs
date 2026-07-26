@@ -8,6 +8,7 @@ mod engine;
 mod fonts;
 mod injector;
 mod keys;
+mod single_instance;
 mod state;
 mod theme;
 
@@ -19,6 +20,12 @@ use std::sync::Arc;
 
 fn main() -> eframe::Result<()> {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
+
+    // Уже запущен? Показать тот экземпляр и выйти.
+    if single_instance::signal_existing_and_exit() {
+        log::info!("другой экземпляр уже запущен — развернул его, выхожу");
+        return Ok(());
+    }
 
     let config_path = Bindings::default_path();
     let bindings = match Bindings::load_or_create(&config_path) {
@@ -48,6 +55,7 @@ fn main() -> eframe::Result<()> {
         native_options,
         Box::new(move |cc| {
             fonts::install(&cc.egui_ctx);
+            single_instance::start_listener(cc.egui_ctx.clone());
             Ok(Box::new(App::new(cc, state_ui, config_ui, config_path)))
         }),
     )

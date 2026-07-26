@@ -23,6 +23,7 @@ pub struct App {
     tab: Tab,
     dark: bool,
     save_notice: Option<String>,
+    really_quit: bool,
 }
 
 impl App {
@@ -40,6 +41,7 @@ impl App {
             tab: Tab::Status,
             dark: true,
             save_notice: None,
+            really_quit: false,
         }
     }
 }
@@ -48,6 +50,7 @@ impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         ctx.request_repaint_after(Duration::from_millis(50));
         self.handle_shortcuts(ctx);
+        self.handle_close(ctx);
         let p = theme::palette(self.dark);
 
         egui::TopBottomPanel::top("bar")
@@ -61,6 +64,10 @@ impl eframe::App for App {
                 Tab::Bindings => self.ui_bindings(ui, &p),
                 Tab::Help => self.ui_help(ui, &p),
             });
+    }
+
+    fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
+        crate::single_instance::cleanup();
     }
 }
 
@@ -101,6 +108,22 @@ impl App {
         if toggle_arm {
             let mut s = self.state.lock();
             s.armed = !s.armed;
+        }
+    }
+
+    /// Закрытие окна сворачивает в фон (движок жив); Ctrl+Q — реальный выход.
+    fn handle_close(&mut self, ctx: &egui::Context) {
+        if ctx.input(|i| i.modifiers.ctrl && i.key_pressed(egui::Key::Q)) {
+            self.really_quit = true;
+            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+            return;
+        }
+        if !self.really_quit && ctx.input(|i| i.viewport().close_requested()) {
+            ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
+            ctx.send_viewport_cmd(egui::ViewportCommand::Visible(false));
+            self.state
+                .lock()
+                .push_log("свёрнуто в фон · запусти joycode снова, чтобы открыть · Ctrl+Q — выход");
         }
     }
 
@@ -346,6 +369,13 @@ impl App {
                 "1 / 2 / 3 — вкладки Статус / Настройки / Инструкция",
                 "Space     — включить/выключить систему",
                 "T         — сменить тему",
+                "Ctrl+Q    — выход",
+            ]);
+            help_section(ui, p, "Фоновый режим", &[
+                "Закрытие окна сворачивает приложение в фон —",
+                "движок продолжает работать, геймпад активен.",
+                "Открыть снова — запусти joycode ещё раз.",
+                "Полный выход — Ctrl+Q.",
             ]);
             help_section(ui, p, "Ограничения", &[
                 "• Клавиши идут в активное окно — держи фокус на терминале.",
