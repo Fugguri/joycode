@@ -19,7 +19,10 @@ use parking_lot::Mutex;
 use std::sync::Arc;
 
 fn main() -> eframe::Result<()> {
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
+    // По умолчанию — только предупреждения от чужих крейтов, info от самого joycode.
+    // Переопределяется через RUST_LOG.
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("warn,joycode=info"))
+        .init();
 
     // Уже запущен? Показать тот экземпляр и выйти.
     if single_instance::signal_existing_and_exit() {
